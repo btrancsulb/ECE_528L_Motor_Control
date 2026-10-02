@@ -79,8 +79,12 @@ void SysTick_Handler(void)
  * @return None
  */
 void Bumper_Switches_Handler(uint8_t bumper_switch_state)
+//set the P8.7 pin high when any of the bumper switches are pressed (indicating a collision)
 {
-    printf("Collision Detected! Bumper Switch State: 0x%02X\n", bumper_switch_state);
+    {
+        printf("Collision Detected! Bumper Switch State: 0x%02X\n", bumper_switch_state);
+        P8->OUT |= 0x80; // Set P8.7 high to indicate collision
+    }
 }
 
 /**
@@ -217,19 +221,23 @@ int main(void)
     EnableInterrupts();
 
     while(1)
-    {
-//        // Rotate to 0
-//        Timer_A2_Update_Duty_Cycle_1(1700);
-//        Timer_A2_Update_Duty_Cycle_2(1700);
-//        LED2_Output(RGB_LED_RED);
-//        Clock_Delay1ms(3000);
-//
-//        // Rotate to 180
-//        Timer_A2_Update_Duty_Cycle_1(7000);
-//        Timer_A2_Update_Duty_Cycle_2(7000);
-//        LED2_Output(RGB_LED_BLUE);
-//        Clock_Delay1ms(3000);
 
+    {
+
+    /*
+        // Rotate to 0
+        Timer_A2_Update_Duty_Cycle_1(1700);
+        Timer_A2_Update_Duty_Cycle_2(1700);
+        LED2_Output(RGB_LED_RED);
+        Clock_Delay1ms(3000);
+
+        // Rotate to 180
+        Timer_A2_Update_Duty_Cycle_1(7000);
+        Timer_A2_Update_Duty_Cycle_2(7000);
+        LED2_Output(RGB_LED_BLUE);
+        Clock_Delay1ms(3000);
+        */
+        
 //        Drive_Pattern_1();
 
 //        if (collision_detected == 1)

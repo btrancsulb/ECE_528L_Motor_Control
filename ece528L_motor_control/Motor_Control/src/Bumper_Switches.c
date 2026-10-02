@@ -36,33 +36,45 @@ void Bumper_Switches_Init(void(*task)(uint8_t))
     Bumper_Task = task;
 
     // Configure the following pins as GPIO pins: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
+    // and enable pull up resistors
     // by clearing the corresponding bits in the SEL0 and SEL1 registers
+    P4->SEL0 &= ~(0xE7);
+    P4->SEL1 &= ~(0xE7);
 
 
 
     // Set the direction of the following pins as input: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by clearing the corresponding bits in the DIR register
+    // Configure the following pins to use falling-edge interrupt triggers by
+    // setting the corresponding bits in the IES register: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0.
+    P4->DIR &= ~(0xE7);
+    P4->IES |= 0xE7;
 
 
     // Enable pull-up resistors on the following pins: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the REN register
+    P4->REN |= 0xE7;
 
 
     // Ensure that the pins are pulled up: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the OUT register
+    P4->OUT |= 0xE7;
 
 
     // Interrupt Edge Select: High-to-Low Transition
     // Configure the pins to use falling edge event triggers: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the IES register
+    P4->IES |= 0xE7;
 
 
     // Clear any existing interrupt flags on the following pins: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by clearing the corresponding bits in the IFG register
+    P4->IFG &= ~(0xE7);
 
 
     // Enable interrupts on the following pins: P4.7 - P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the IE register
+    P4->IE |= 0xE7;
 
 
     // Set the priority level of the interrupts (IRQ 38) to 0 (section 2.4.3.20)
@@ -80,6 +92,7 @@ uint8_t Bumper_Read(void)
     // This is done to account for the negative logic behavior of the bumper switches
     uint32_t bumper_state = ~P4->IN;
 
+
     // Use bitwise operations to extract the relevant bits representing the switch states.
     // - ((bumper_state & 0xE0) >> 2): Extract bits 7, 6, and 5, and right-shift them by 2 to align them to bits 5, 4, and 3.
     // - ((bumper_state & 0x0C) >> 1): Extract bits 3 and 2, and right-shift them by 1 to align them to bits 2 and 1.
@@ -96,14 +109,14 @@ uint8_t Bumper_Read(void)
  * The function clears all interrupt flags for PORT4 and then executes the user-defined task function (Bump_Task)
  * by passing the current state of the switches, which is obtained by calling Bump_Read().
  *
- * @note This function does not handle critical section/race conditions.
+ * @note This function does not handle critical section/race conditions, but should, please fix
  *
  * @return None
  */
 void PORT4_IRQHandler(void)
 {
     // Clear the interrupt flags for P4.7 - P4.5, P4.3, P4.2, and P4.0
-    P4->IFG &= ~0xED;
+    P4->IFG &= ~(0xE7);
 
     // Execute the user-defined task
     (*Bumper_Task)(Bumper_Read());

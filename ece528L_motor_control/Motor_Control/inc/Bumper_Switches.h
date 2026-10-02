@@ -56,8 +56,10 @@
  */
 void (*Bumper_Task)(uint8_t bumper_switch_state);
 
+
+
 /**
- * @brief
+ * @brief Initialize the Bumper Switches and configure the necessary GPIO pins and interrupts.
  *
  * @param task A pointer to the user-defined function that will be called on a falling edge event.
  *
