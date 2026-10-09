@@ -30,6 +30,12 @@
 
 #include "../inc/Bumper_Switches.h"
 
+#define BUMPER_PIN_MASK 0xED
+#define BUMPER_DEBOUNCE_MS 10
+
+static volatile uint8_t Bumper_PendingPins = 0;
+static uint8_t Bumper_DebounceMs = 0;
+
 void Bumper_Switches_Init(void(*task)(uint8_t))
 {
     // Store the user-defined task function for use during interrupt handling
@@ -38,8 +44,8 @@ void Bumper_Switches_Init(void(*task)(uint8_t))
     // Configure the following pins as GPIO pins: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // and enable pull up resistors
     // by clearing the corresponding bits in the SEL0 and SEL1 registers
-    P4->SEL0 &= ~(0xE7);
-    P4->SEL1 &= ~(0xE7);
+    P4->SEL0 &= ~(0xED);
+    P4->SEL1 &= ~(0xED);
 
 
 
@@ -47,34 +53,34 @@ void Bumper_Switches_Init(void(*task)(uint8_t))
     // by clearing the corresponding bits in the DIR register
     // Configure the following pins to use falling-edge interrupt triggers by
     // setting the corresponding bits in the IES register: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0.
-    P4->DIR &= ~(0xE7);
-    P4->IES |= 0xE7;
+    P4->DIR &= ~(0xED);
+    P4->IES |= 0xED;
 
 
     // Enable pull-up resistors on the following pins: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the REN register
-    P4->REN |= 0xE7;
+    P4->REN |= 0xED;
 
 
     // Ensure that the pins are pulled up: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the OUT register
-    P4->OUT |= 0xE7;
+    P4->OUT |= 0xED;
 
 
     // Interrupt Edge Select: High-to-Low Transition
     // Configure the pins to use falling edge event triggers: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the IES register
-    P4->IES |= 0xE7;
+    P4->IES |= 0xED;
 
 
     // Clear any existing interrupt flags on the following pins: P4.7, P4.6, P4.5, P4.3, P4.2, and P4.0
     // by clearing the corresponding bits in the IFG register
-    P4->IFG &= ~(0xE7);
+    P4->IFG &= ~(0xED);
 
 
     // Enable interrupts on the following pins: P4.7 - P4.5, P4.3, P4.2, and P4.0
     // by setting the corresponding bits in the IE register
-    P4->IE |= 0xE7;
+    P4->IE |= 0xED;
 
 
     // Set the priority level of the interrupts (IRQ 38) to 0 (section 2.4.3.20)
@@ -101,23 +107,62 @@ uint8_t Bumper_Read(void)
     return (((bumper_state & 0xE0) >> 2) | ((bumper_state & 0x0C) >> 1) | (bumper_state & 0x01));
 }
 
+void Bumper_Switches_Service(void)
+{
+    uint8_t pending_pins;
+    uint8_t pending_state;
+    uint8_t bumper_state;
+
+    if (Bumper_PendingPins == 0)
+    {
+        return;
+    }
+
+    NVIC->ICER[1] = 0x00000040;
+    pending_pins = Bumper_PendingPins;
+    Bumper_DebounceMs++;
+
+    if (Bumper_DebounceMs < BUMPER_DEBOUNCE_MS)
+    {
+        NVIC->ISER[1] = 0x00000040;
+        return;
+    }
+
+    bumper_state = Bumper_Read();
+    pending_state = (uint8_t)(((pending_pins & 0xE0) >> 2) |
+                              ((pending_pins & 0x0C) >> 1) |
+                              (pending_pins & 0x01));
+
+    P4->IFG &= ~pending_pins;
+    P4->IE |= pending_pins;
+    Bumper_PendingPins = 0;
+    Bumper_DebounceMs = 0;
+    NVIC->ISER[1] = 0x00000040;
+
+    if ((bumper_state & pending_state) != 0)
+    {
+        (*Bumper_Task)((uint8_t)(bumper_state & pending_state));
+    }
+}
+
 /**
  * @brief Interrupt handler for PORT4 (P4) events.
  *
  * This function is an interrupt service routine (ISR) for PORT4 (P4) of the TI MSP432 LaunchPad.
  * It is triggered on a falling edge event on any of the switches connected to P4 (BUMP_0 to BUMP_5).
- * The function clears all interrupt flags for PORT4 and then executes the user-defined task function (Bump_Task)
- * by passing the current state of the switches, which is obtained by calling Bump_Read().
+ * The function clears the relevant interrupt flags, masks the triggered pins, and records them for
+ * foreground debounce processing by Bumper_Switches_Service().
  *
- * @note This function does not handle critical section/race conditions, but should, please fix
+ * @note Bumper callbacks are deferred until Bumper_Switches_Service confirms a stable press.
  *
  * @return None
  */
 void PORT4_IRQHandler(void)
 {
-    // Clear the interrupt flags for P4.7 - P4.5, P4.3, P4.2, and P4.0
-    P4->IFG &= ~(0xE7);
+    uint8_t triggered_pins = (uint8_t)(P4->IFG & P4->IE & BUMPER_PIN_MASK);
 
-    // Execute the user-defined task
-    (*Bumper_Task)(Bumper_Read());
+    P4->IFG &= ~BUMPER_PIN_MASK;
+    P4->IE &= ~triggered_pins;
+    Bumper_PendingPins |= triggered_pins;
+    Bumper_DebounceMs = 0;
 }

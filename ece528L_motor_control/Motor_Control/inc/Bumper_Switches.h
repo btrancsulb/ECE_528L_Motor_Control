@@ -35,11 +35,11 @@
 #include "msp.h"
 
 /**
- * @brief User-defined task function for handling Bumper Switch interrupt events.
+ * @brief User-defined task function for handling debounced bumper presses.
  *
  * This is a user-defined function that can be assigned to the Bumper_Task pointer during initialization.
- * When a falling edge event is detected on any of the Bumper Switch pins (P4.7, P4.6, P4.5, P4.3, P4.2, or P4.0),
- * this function will be called, and the bumper_switch_state parameter will indicate which specific bumper switch triggered the interrupt.
+ * After a falling edge remains stable through the debounce interval, this function is called with
+ * the bumper_switch_state bits identifying the confirmed pressed switches.
  *
  * @param bumper_switch_state An 8-bit unsigned integer representing the Bumper Switch that triggered the interrupt.
  *                   The bit positions correspond to the following switches:
@@ -61,7 +61,7 @@ void (*Bumper_Task)(uint8_t bumper_switch_state);
 /**
  * @brief Initialize the Bumper Switches and configure the necessary GPIO pins and interrupts.
  *
- * @param task A pointer to the user-defined function that will be called on a falling edge event.
+ * @param task A pointer to the user-defined function called for a debounced bumper press.
  *
  * @return None
  */
@@ -81,5 +81,15 @@ void Bumper_Switches_Init(void(*task)(uint8_t));
  * @return uint8_t The 6-bit positive logic result representing the current state of the switches (0 to 63).
  */
 uint8_t Bumper_Read(void);
+
+/**
+ * @brief Advance pending bumper debounce and dispatch stable presses.
+ *
+ * Call this function approximately once per millisecond from foreground code.
+ * The user task is called only after a switch remains pressed through the debounce interval.
+ *
+ * @return None
+ */
+void Bumper_Switches_Service(void);
 
 #endif /* INC_BUMPER_SWITCHES_H_ */

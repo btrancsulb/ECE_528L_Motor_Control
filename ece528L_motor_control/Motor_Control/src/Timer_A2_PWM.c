@@ -56,6 +56,7 @@ void Timer_A2_PWM_Init(uint16_t period_constant, uint16_t duty_cycle_1, uint16_t
     // Duty Cycle %: duty_cycle_2 / period_constant
     TIMER_A2->CCR[2] = duty_cycle_2;
 
+
     // Modify the following bits in the CTL register
     // Select SMCLK = 12 MHz as timer clock source
     // Set ID = 1 (Divide timer clock by 2)

@@ -24,11 +24,14 @@ void Timer_A0_PWM_Init(uint16_t period_constant, uint16_t duty_cycle_1, uint16_t
     // Configure pins P2.6 (PM_TA0.3) and P2.7 (PM_TA0.4) to use peripheral function mode
     // by setting Bits 6 and 7 of the SEL0 register for P2
     // and clearing Bits 6 and 7 of the SEL1 register for P2
+    P2->SEL0 |= (BIT6 | BIT7);
+    P2->SEL1 &= ~(BIT6 | BIT7);
 
 
 
     // Configure pins P2.6 and P2.7 as output GPIO pins to drive the PWM signals
     // Set Bits 6 and 7 of the DIR register for P2
+    P2->DIR |= (BIT6 | BIT7);
 
 
     // Set the Timer A0 Capture/Compare register to the specified period_constant
@@ -36,32 +39,42 @@ void Timer_A0_PWM_Init(uint16_t period_constant, uint16_t duty_cycle_1, uint16_t
     // General formula: Period = (2*period_constant) / (12 MHz / Prescale Value)
     // In this case: Period = (2*15000) / (12 MHz / 8) = 20 ms
     // Assign the value of period_constant to the CCR[0] register
+    TIMER_A0->CCR[0] = period_constant;
 
 
     // Configure the Timer A0 expansion register to divide the clock frequency by 1
     // Clear all bits of the EX0 register
+    TIMER_A0->EX0 = 0;
 
 
     // Configure the output mode as Toggle / Reset for CCR[3]
     // Set the bits of the OUTMOD field of the CCTL[3] register to 010b
+    TIMER_A0->CCTL[3] &= ~0xE0; // Clear the OUTMOD bits
+    TIMER_A0->CCTL[3] |= (0x2 << 5); // Set OUTMOD to 010b (Toggle / Reset)
 
 
     // Assign the value of duty_cycle_1 to the CCR[3] register
     // Duty Cycle %: duty_cycle_1 / period_constant
+    TIMER_A0->CCR[3] = duty_cycle_1;
 
 
     // Configure the output mode as Toggle / Reset for CCR[4]
     // Set the bits of the OUTMOD field of the CCTL[4] register to 010b
+    TIMER_A0->CCTL[4] &= ~0xE0; // Clear the OUTMOD bits
+    TIMER_A0->CCTL[4] |= (0x2 << 5); // Set OUTMOD to 010b (Toggle / Reset)
 
 
-    // Assign the value of duty_cycle_1 to the CCR[4] register
+    // Assign the value of duty_cycle_2 to the CCR[4] register
     // Duty Cycle %: duty_cycle_2 / period_constant
+    TIMER_A0->CCR[4] = duty_cycle_2;    
 
 
     // Modify the following bits in the CTL register
-    // Select SMCLK = 12 MHz as timer clock source
+    // Select SMCLK = 12 MHz as timer clock source (TASSEL = 2)
     // Set ID = 3 (Divide timer clock by 8)
     // Set MC = 3 (Up/Down Mode)
+    // 0x02F0 = TASSEL_2 | ID_3 | MC_3
+    TIMER_A0->CTL |= 0x02F0;
 
 }
 

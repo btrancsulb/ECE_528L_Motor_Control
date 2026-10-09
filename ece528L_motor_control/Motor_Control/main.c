@@ -31,7 +31,23 @@ uint32_t SysTick_ms_elapsed = 0;
 
 // Global flag that gets set in Bumper_Switches_Handler.
 // This is used to detect if any collisions occurred when any one of the bumper switches are pressed.
-uint8_t collision_detected = 0;
+volatile uint8_t collision_detected = 0;
+
+static uint8_t Delay_With_Bumper_Service(uint32_t duration_ms, uint8_t abort_on_collision)
+{
+    while (duration_ms > 0)
+    {
+        Clock_Delay1ms(1);
+        Bumper_Switches_Service();
+        if (abort_on_collision && (collision_detected != 0))
+        {
+            return 1;
+        }
+        duration_ms--;
+    }
+
+    return 0;
+}
 
 /**
  * @brief Interrupt service routine for the SysTick timer.
@@ -81,9 +97,11 @@ void SysTick_Handler(void)
 void Bumper_Switches_Handler(uint8_t bumper_switch_state)
 //set the P8.7 pin high when any of the bumper switches are pressed (indicating a collision)
 {
+    if (collision_detected == 0)
     {
         printf("Collision Detected! Bumper Switch State: 0x%02X\n", bumper_switch_state);
         P8->OUT |= 0x80; // Set P8.7 high to indicate collision
+        collision_detected = 1; // Set the collision_detected flag
     }
 }
 
@@ -112,35 +130,35 @@ void Drive_Pattern_1()
 {
     // Set PWM to 50% Duty Cycle
     Motor_Forward(7500, 7500);
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { return; }
 
     // Set PWM to 30% Duty Cycle
     Motor_Left(4500, 4500);
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { return; }
 
     // Set PWM to 30% Duty Cycle
     Motor_Right(4500, 4500);
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { return; }
 
     // Set PWM to 30% Duty Cycle
     Motor_Backward(4500, 4500);
-    Clock_Delay1ms(2000);
+    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    Clock_Delay1ms(2000);
+    Delay_With_Bumper_Service(2000, 1);
 }
 
 /**
@@ -153,37 +171,48 @@ void Drive_Pattern_1()
 void Handle_Collision()
 {
     // Stop the motors
+    Motor_Stop();
 
 
     // Make a function call to Clock_Delay1ms(2000)
+    Delay_With_Bumper_Service(2000, 0);
 
 
     // Move the motors backward with 30% duty cycle
+    Motor_Backward(4500, 4500);
 
 
     // Make a function call to Clock_Delay1ms(2000)
+    Delay_With_Bumper_Service(2000, 0);
 
 
     // Stop the motors
+    Motor_Stop();
 
 
     // Make a function call to Clock_Delay1ms(1000)
+    Delay_With_Bumper_Service(1000, 0);
 
 
     // Make the robot turn to the right with 10% duty cycle
+    Motor_Right(1500, 1500);
 
 
     // Make a function call to Clock_Delay1ms(4000)
+    Delay_With_Bumper_Service(4000, 0);
 
 
     // Stop the motors
+    Motor_Stop();
 
 
     // Make a function call to Clock_Delay1ms(2000)
+    Delay_With_Bumper_Service(2000, 0);
 
 
     // Set the collision_detected flag to 0
-
+    collision_detected = 0;
+    P8->OUT &= ~0xC0;
 }
 
 int main(void)
@@ -224,8 +253,9 @@ int main(void)
 
     {
 
-    /*
+
         // Rotate to 0
+        /*
         Timer_A2_Update_Duty_Cycle_1(1700);
         Timer_A2_Update_Duty_Cycle_2(1700);
         LED2_Output(RGB_LED_RED);
@@ -237,16 +267,16 @@ int main(void)
         LED2_Output(RGB_LED_BLUE);
         Clock_Delay1ms(3000);
         */
-        
-//        Drive_Pattern_1();
 
-//        if (collision_detected == 1)
-//        {
-//            Handle_Collision();
-//        }
-//        else
-//        {
-//            Motor_Forward(4500, 4500);
-//        }
+        Bumper_Switches_Service();
+
+        if (collision_detected == 1)
+        {
+            Handle_Collision();
+        }
+        else
+        {
+            Motor_Forward(6000,6000);
+        }
     }
 }
