@@ -13,4 +13,4 @@ The Motor Control lab interfaces with the following:
 * HS-485HB Servo-Stock Rotation - [Product Link](https://www.servocity.com/hs-485hb-servo/)
 
 
-![bumper terminal]("C:\Users\BrendanT\Pictures\Screenshots\Screenshot 2026-10-01 203622.png")
+![bumper terminal](ece528L_motor_control\ece528L_lab1_bumper_terminal_output_group_11.png)
