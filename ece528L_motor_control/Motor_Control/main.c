@@ -33,12 +33,11 @@ uint32_t SysTick_ms_elapsed = 0;
 // This is used to detect if any collisions occurred when any one of the bumper switches are pressed.
 volatile uint8_t collision_detected = 0;
 
-static uint8_t Delay_With_Bumper_Service(uint32_t duration_ms, uint8_t abort_on_collision)
+static uint8_t Delay_Until_Collision(uint32_t duration_ms, uint8_t abort_on_collision)
 {
     while (duration_ms > 0)
     {
         Clock_Delay1ms(1);
-        Bumper_Switches_Service();
         if (abort_on_collision && (collision_detected != 0))
         {
             return 1;
@@ -130,35 +129,35 @@ void Drive_Pattern_1()
 {
     // Set PWM to 50% Duty Cycle
     Motor_Forward(7500, 7500);
-    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
+    if (Delay_Until_Collision(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    if (Delay_With_Bumper_Service(2000, 1)) { return; }
+    if (Delay_Until_Collision(2000, 1)) { return; }
 
     // Set PWM to 30% Duty Cycle
     Motor_Left(4500, 4500);
-    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
+    if (Delay_Until_Collision(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    if (Delay_With_Bumper_Service(2000, 1)) { return; }
+    if (Delay_Until_Collision(2000, 1)) { return; }
 
     // Set PWM to 30% Duty Cycle
     Motor_Right(4500, 4500);
-    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
+    if (Delay_Until_Collision(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    if (Delay_With_Bumper_Service(2000, 1)) { return; }
+    if (Delay_Until_Collision(2000, 1)) { return; }
 
     // Set PWM to 30% Duty Cycle
     Motor_Backward(4500, 4500);
-    if (Delay_With_Bumper_Service(2000, 1)) { Motor_Stop(); return; }
+    if (Delay_Until_Collision(2000, 1)) { Motor_Stop(); return; }
 
     // Stop the motors
     Motor_Stop();
-    Delay_With_Bumper_Service(2000, 1);
+    Delay_Until_Collision(2000, 1);
 }
 
 /**
@@ -175,7 +174,7 @@ void Handle_Collision()
 
 
     // Make a function call to Clock_Delay1ms(2000)
-    Delay_With_Bumper_Service(2000, 0);
+    Delay_Until_Collision(2000, 0);
 
 
     // Move the motors backward with 30% duty cycle
@@ -183,7 +182,7 @@ void Handle_Collision()
 
 
     // Make a function call to Clock_Delay1ms(2000)
-    Delay_With_Bumper_Service(2000, 0);
+    Delay_Until_Collision(2000, 0);
 
 
     // Stop the motors
@@ -191,7 +190,7 @@ void Handle_Collision()
 
 
     // Make a function call to Clock_Delay1ms(1000)
-    Delay_With_Bumper_Service(1000, 0);
+    Delay_Until_Collision(1000, 0);
 
 
     // Make the robot turn to the right with 10% duty cycle
@@ -199,7 +198,7 @@ void Handle_Collision()
 
 
     // Make a function call to Clock_Delay1ms(4000)
-    Delay_With_Bumper_Service(4000, 0);
+    Delay_Until_Collision(4000, 0);
 
 
     // Stop the motors
@@ -207,7 +206,7 @@ void Handle_Collision()
 
 
     // Make a function call to Clock_Delay1ms(2000)
-    Delay_With_Bumper_Service(2000, 0);
+    Delay_Until_Collision(2000, 0);
 
 
     // Set the collision_detected flag to 0
@@ -267,8 +266,6 @@ int main(void)
         LED2_Output(RGB_LED_BLUE);
         Clock_Delay1ms(3000);
         */
-
-        Bumper_Switches_Service();
 
         if (collision_detected == 1)
         {

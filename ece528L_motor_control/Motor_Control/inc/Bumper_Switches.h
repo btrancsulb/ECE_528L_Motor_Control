@@ -35,11 +35,10 @@
 #include "msp.h"
 
 /**
- * @brief User-defined task function for handling debounced bumper presses.
+ * @brief User-defined task function for handling bumper presses.
  *
  * This is a user-defined function that can be assigned to the Bumper_Task pointer during initialization.
- * After a falling edge remains stable through the debounce interval, this function is called with
- * the bumper_switch_state bits identifying the confirmed pressed switches.
+ * PORT4_IRQHandler calls this function after a falling-edge event if the switch is still pressed.
  *
  * @param bumper_switch_state An 8-bit unsigned integer representing the Bumper Switch that triggered the interrupt.
  *                   The bit positions correspond to the following switches:
@@ -61,7 +60,7 @@ void (*Bumper_Task)(uint8_t bumper_switch_state);
 /**
  * @brief Initialize the Bumper Switches and configure the necessary GPIO pins and interrupts.
  *
- * @param task A pointer to the user-defined function called for a debounced bumper press.
+ * @param task A pointer to the user-defined function called from PORT4_IRQHandler.
  *
  * @return None
  */
@@ -81,15 +80,5 @@ void Bumper_Switches_Init(void(*task)(uint8_t));
  * @return uint8_t The 6-bit positive logic result representing the current state of the switches (0 to 63).
  */
 uint8_t Bumper_Read(void);
-
-/**
- * @brief Advance pending bumper debounce and dispatch stable presses.
- *
- * Call this function approximately once per millisecond from foreground code.
- * The user task is called only after a switch remains pressed through the debounce interval.
- *
- * @return None
- */
-void Bumper_Switches_Service(void);
 
 #endif /* INC_BUMPER_SWITCHES_H_ */
