@@ -79,7 +79,7 @@ One limitation remains. The bounce check is one extra read, not a timed debounce
 |Overview | Feranmi | Source Code | Brandon & Feranmi |
 | Components Used | Feranmi | Robot Demonstration | Brandon & Feranmi |
 | Analysis and Results | Brandon | Oscilliscope Testing | Brandon |
-| Known Issues and Limitations | Brandon 
+| Known Issues and Limitations | Brandon | bug fixes to code |
 | Author Contribution | Brandon & Feranmi |
 | References | Feranmi |
 
