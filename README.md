@@ -56,6 +56,22 @@ This was the oscilloscope outputs when different duty cycles were added.
 ![oscilloscope output one](ece528L_lab1_servo_0_degrees_group_11.jpg)
 ![oscilloscope output one](ece528L_lab1_servo_0_degrees_pulse_width_group_11.jpg)
 
+### Known Issues and Limitations
+
+Two problems showed up on the first run. The robot did not move, and a bumper press looked stuck after it was released.
+
+The motors stayed still because Timer A0 was started with the wrong clock. Its control register selected the external TAxCLK input instead of SMCLK, so no PWM pulses reached P2.6 and P2.7. The motor enable pins were set, but the driver had no PWM signal to follow. The control register was changed to `0x02F0`, which selects SMCLK, divides that clock by 8, and runs the timer in up/down mode. That is the same arrangement Timer A2 already used for the servos. With a period constant of 15000, the PWM period is 20 ms, and the duty-cycle writes now change the motor speed.
+
+The bumpers looked stuck because a press was latched and never cleared. Three things caused that:
+
+* The pin mask was `0xE7` instead of `0xED`. That left out P4.3 (BUMP_2) and enabled unused P4.1. All six bumper pins now use `0xED`.
+* `collision_detected` was set on a press, but `Handle_Collision()` was not running, so the flag and the chassis red LEDs stayed on.
+* Later presses were ignored while that flag stayed set.
+
+The main loop now stops the motors as soon as a bumper interrupt is accepted, backs up, turns right, and then clears `collision_detected` and the red LEDs so another collision can be detected. Switch bounce is rejected inside the PORT4 interrupt: the pins are read again, and the collision handler runs only if the switch that caused the interrupt is still pressed. An earlier version waited out a 10 ms debounce window on every delay, which spent extra CPU time. The single confirmation read replaced that wait.
+
+One limitation remains. The bounce check is one extra read, not a timed debounce window, so a slow contact bounce can still be counted as a press. The servo sweep is also commented out while the robot runs the forward-and-recover loop.
+
 ### Author Contribution
                    
 | Lab Report Contributions| Group Member | Implementation Contributions | Group Member |
